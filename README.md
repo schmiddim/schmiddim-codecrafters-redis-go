@@ -1,3 +1,10 @@
+```shell
+
+docker run --rm --name redis-cli -it goodsmileduck/redis-cli redis-cli -h 192.168.178.25 -p 6379 ping
+```
+
+
+
 [![progress-banner](https://app.codecrafters.io/progress/redis/bd05ba0c-e054-40f2-b6d9-7f82a836bb64)](https://app.codecrafters.io/users/schmiddim)
 
 This is a starting point for Go solutions to the
