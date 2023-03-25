@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"os"
@@ -23,10 +24,29 @@ func main() {
 		fmt.Println("Error accepting connection: ", err.Error())
 		os.Exit(1)
 	}
-	_, err = conn.Write([]byte("+PONG\r\n"))
-	if err != nil {
-		return
+	var messages []string
+	scanner := bufio.NewScanner(conn)
+
+	//scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		message := scanner.Text()
+		messages = append(messages, message)
+		fmt.Println(scanner.Text())
+		if message == "ping" {
+			fmt.Printf("cmd  %s received\n", message)
+			_, err = conn.Write([]byte("+PONG\r\n"))
+			if err != nil {
+				return
+			}
+		}
+		if message == "" {
+			break
+		}
 	}
+	//_, err = conn.Write([]byte("+PONG\r\n"))
+	//if err != nil {
+	//	return
+	//}
 	err = conn.Close()
 	if err != nil {
 		return
