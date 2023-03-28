@@ -49,13 +49,41 @@ func handleRequest(conn net.Conn) {
 		if err != nil {
 			fmt.Println("Error reading:", err.Error())
 		}
-		for _, element := range strings.Split(string(buf), "\n") {
-			if strings.TrimRight(strings.ToLower(element), "\r") == "ping" {
+		arr := strings.Split(string(buf), "\r\n")
+
+		if string(buf[0]) == "*" {
+
+			fmt.Println("is an array, size is", (string(buf[1])))
+
+		}
+
+		cmdFound := false
+		for index, cmd := range arr {
+			cmd = strings.TrimRight(strings.ToLower(cmd), "\r")
+			if cmd == "ping" {
 				_, err = conn.Write([]byte("+PONG\r\n"))
+				cmdFound = true
+				break
+			}
+			if cmd == "echo" {
+				fmt.Println(index, arr[index+2])
+				_, err = conn.Write([]byte("" + arr[index+2] + "\r\n"))
+
+				cmdFound = true
+				break
 			}
 		}
-		if err != nil {
-			return
+
+		if cmdFound == false {
+			//	_, err = conn.Write([]byte("+command not found\r\n"))
+			//
+			fmt.Println("cmd not found")
+			//return
 		}
+
+		//_, err = conn.Write([]byte("\r\n"))
+		//if err != nil {
+		//	return
+		//}
 	}
 }
