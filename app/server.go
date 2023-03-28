@@ -44,6 +44,7 @@ func handleRequest(conn net.Conn) {
 		}
 	}(conn)
 	for {
+		//@todo handle command shit
 		buf := make([]byte, 1024)
 		// Read the incoming connection into the buffer.
 		_, err := conn.Read(buf)
@@ -67,13 +68,14 @@ func handleRequest(conn net.Conn) {
 			lastCmd = cmd
 			cmd = strings.TrimRight(strings.ToLower(cmd), "\r")
 			if cmd == "ping" {
+				fmt.Println("ping")
 				_, err = conn.Write([]byte("+PONG\r\n"))
 				cmdFound = true
 				break
 			}
 			if cmd == "echo" {
 				fmt.Println(index, arr[index+2])
-				_, err = conn.Write([]byte("+" + arr[index+2] + "\r\n"))
+				_, err = conn.Write([]byte("+p" + arr[index+2] + "\r\n"))
 
 				cmdFound = true
 				break
