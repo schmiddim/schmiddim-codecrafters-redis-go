@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"strings"
@@ -47,6 +48,9 @@ func handleRequest(conn net.Conn) {
 		// Read the incoming connection into the buffer.
 		_, err := conn.Read(buf)
 		if err != nil {
+			if err == io.EOF {
+				return
+			}
 			fmt.Println("Error reading:", err.Error())
 		}
 		arr := strings.Split(string(buf), "\r\n")
@@ -58,7 +62,9 @@ func handleRequest(conn net.Conn) {
 		}
 
 		cmdFound := false
+		lastCmd := ""
 		for index, cmd := range arr {
+			lastCmd = cmd
 			cmd = strings.TrimRight(strings.ToLower(cmd), "\r")
 			if cmd == "ping" {
 				_, err = conn.Write([]byte("+PONG\r\n"))
@@ -67,7 +73,7 @@ func handleRequest(conn net.Conn) {
 			}
 			if cmd == "echo" {
 				fmt.Println(index, arr[index+2])
-				_, err = conn.Write([]byte("" + arr[index+2] + "\r\n"))
+				_, err = conn.Write([]byte("+" + arr[index+2] + "\r\n"))
 
 				cmdFound = true
 				break
@@ -77,13 +83,13 @@ func handleRequest(conn net.Conn) {
 		if cmdFound == false {
 			//	_, err = conn.Write([]byte("+command not found\r\n"))
 			//
-			fmt.Println("cmd not found")
+			fmt.Println("cmd not found", lastCmd)
 			//return
 		}
 
 		//_, err = conn.Write([]byte("\r\n"))
-		//if err != nil {
-		//	return
-		//}
+		if err != nil {
+			return
+		}
 	}
 }
