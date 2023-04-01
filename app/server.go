@@ -1,11 +1,12 @@
 package main
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"os"
-	"strings"
 )
 
 const (
@@ -44,54 +45,28 @@ func handleRequest(conn net.Conn) {
 		}
 	}(conn)
 	for {
-		//@todo handle command shit
-		buf := make([]byte, 1024)
-		// Read the incoming connection into the buffer.
-		_, err := conn.Read(buf)
+		value, err := decodeInput(bufio.NewReader(conn))
+		if errors.Is(err, io.EOF) {
+			break
+		}
 		if err != nil {
-			if err == io.EOF {
-				return
-			}
-			fmt.Println("Error reading:", err.Error())
-		}
-		arr := strings.Split(string(buf), "\r\n")
-
-		if string(buf[0]) == "*" {
-
-			fmt.Println("is an array, size is", (string(buf[1])))
-
-		}
-
-		cmdFound := false
-		lastCmd := ""
-		for index, cmd := range arr {
-			lastCmd = cmd
-			cmd = strings.TrimRight(strings.ToLower(cmd), "\r")
-			if cmd == "ping" {
-				fmt.Println("ping")
-				_, err = conn.Write([]byte("+PONG\r\n"))
-				cmdFound = true
-				break
-			}
-			if cmd == "echo" {
-				fmt.Println(index, arr[index+2])
-				_, err = conn.Write([]byte("+p" + arr[index+2] + "\r\n"))
-
-				cmdFound = true
-				break
-			}
-		}
-
-		if cmdFound == false {
-			//	_, err = conn.Write([]byte("+command not found\r\n"))
-			//
-			fmt.Println("cmd not found", lastCmd)
-			//return
-		}
-
-		//_, err = conn.Write([]byte("\r\n"))
-		if err != nil {
+			fmt.Print("Err reading client ", err.Error())
 			return
 		}
+		command := value.Array()[0].String()
+		args := value.Array()[1:]
+
+		switch command {
+		case "ping":
+			conn.Write([]byte("+PONG\r\n"))
+
+		case "echo":
+			conn.Write([]byte(fmt.Sprintf("$%d\r\n%s\r\n", len(args[0].String()), args[0].String())))
+
+		default:
+			conn.Write([]byte("-ERR unknown command '" + command + "'\r\n"))
+		}
+
 	}
+
 }
