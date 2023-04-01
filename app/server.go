@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"strconv"
 )
 
 const (
@@ -14,6 +15,8 @@ const (
 	ConnPort = "6379"
 	ConnType = "tcp"
 )
+
+var cacheItems = make(map[string]string)
 
 func main() {
 	l, err := net.Listen(ConnType, ConnHost+":"+ConnPort)
@@ -58,13 +61,53 @@ func handleRequest(conn net.Conn) {
 
 		switch command {
 		case "ping":
-			conn.Write([]byte("+PONG\r\n"))
+			_, err := conn.Write([]byte("+PONG\r\n"))
+			if err != nil {
+				return
+			}
 
 		case "echo":
-			conn.Write([]byte(fmt.Sprintf("$%d\r\n%s\r\n", len(args[0].String()), args[0].String())))
+			_, err := conn.Write([]byte(fmt.Sprintf("$%d\r\n%s\r\n", len(args[0].String()), args[0].String())))
+			if err != nil {
+				return
+			}
+		case "set":
+			if len(value.Array()) != 3 {
+				_, err := conn.Write([]byte("-ERR your doing it wrong\r\n"))
+				if err != nil {
+					return
+				}
 
+			}
+			key := value.Array()[1].String()
+			cacheItems[key] = value.Array()[2].String()
+			_, err := conn.Write([]byte("+saved\r\n"))
+			if err != nil {
+				return
+			}
+		case "get":
+			if len(value.Array()) != 2 {
+				_, err := conn.Write([]byte("-ERR your doing it wrong\r\n"))
+				if err != nil {
+					return
+				}
+			}
+			key := value.Array()[1].String()
+			n := strconv.Itoa(len(cacheItems[key]))
+			item := cacheItems[key]
+
+			resultString := "$" + n + "\r\n" + item + "\r\n"
+			stream := []byte(resultString)
+
+			_, err := conn.Write(stream)
+			if err != nil {
+				return
+			}
 		default:
-			conn.Write([]byte("-ERR unknown command '" + command + "'\r\n"))
+			_, err2 := conn.Write([]byte("-ERR unknown command '" + command + "'\r\n"))
+			if err2 != nil {
+				return
+			}
 		}
 
 	}
