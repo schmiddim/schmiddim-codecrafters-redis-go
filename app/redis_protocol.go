@@ -6,6 +6,7 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Type byte
@@ -15,6 +16,27 @@ const (
 	BulkString   Type = '$'
 	Array        Type = '*'
 )
+
+type CacheEntry struct {
+	value       string
+	expiryTime  int
+	dateCreated time.Time
+}
+
+func (c CacheEntry) String() string {
+	return c.value
+}
+func (c CacheEntry) IsExpired() bool {
+	duration := time.Duration(c.expiryTime) * time.Millisecond
+	expiryDate := c.dateCreated.Add(duration)
+	if expiryDate.Before(time.Now()) {
+		return true
+	}
+	return false
+}
+func (c CacheEntry) Len() int {
+	return len(c.value)
+}
 
 type Value struct {
 	typ   Type

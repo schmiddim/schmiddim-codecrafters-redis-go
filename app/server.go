@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"time"
 )
 
 const (
@@ -16,7 +17,7 @@ const (
 	ConnType = "tcp"
 )
 
-var cacheItems = make(map[string]string)
+var cacheItems = make(map[string]CacheEntry)
 
 func main() {
 	l, err := net.Listen(ConnType, ConnHost+":"+ConnPort)
@@ -72,18 +73,43 @@ func handleRequest(conn net.Conn) {
 				return
 			}
 		case "set":
-			if len(value.Array()) != 3 {
-				_, err := conn.Write([]byte("-ERR your doing it wrong\r\n"))
+
+			if len(value.Array()) == 5 {
+				if value.Array()[3].String() == "PX" {
+					key := value.Array()[1].String()
+					expiryTime, err := strconv.Atoi(value.Array()[4].String())
+
+					if err != nil {
+						_, err := conn.Write([]byte("-ERR Invalid expiry Time\r\n"))
+						if err != nil {
+							return
+						}
+					}
+					cacheItems[key] = CacheEntry{
+						value:       value.Array()[2].String(),
+						expiryTime:  expiryTime,
+						dateCreated: time.Now(),
+					}
+					_, err = conn.Write([]byte("+OK\r\n"))
+					if err != nil {
+						return
+					}
+
+				}
+			}
+			if len(value.Array()) == 3 {
+				key := value.Array()[1].String()
+
+				cacheItems[key] = CacheEntry{
+					value:       value.Array()[2].String(),
+					expiryTime:  -1,
+					dateCreated: time.Now(),
+				}
+
+				_, err := conn.Write([]byte("+OK\r\n"))
 				if err != nil {
 					return
 				}
-
-			}
-			key := value.Array()[1].String()
-			cacheItems[key] = value.Array()[2].String()
-			_, err := conn.Write([]byte("+OK\r\n"))
-			if err != nil {
-				return
 			}
 		case "get":
 			if len(value.Array()) != 2 {
@@ -93,8 +119,14 @@ func handleRequest(conn net.Conn) {
 				}
 			}
 			key := value.Array()[1].String()
-			n := strconv.Itoa(len(cacheItems[key]))
-			item := cacheItems[key]
+			if cacheItems[key].IsExpired() == true {
+				_, err := conn.Write([]byte("$-1\r\n"))
+				if err != nil {
+					return
+				}
+			}
+			n := strconv.Itoa(cacheItems[key].Len())
+			item := cacheItems[key].String()
 
 			resultString := "$" + n + "\r\n" + item + "\r\n"
 			stream := []byte(resultString)
