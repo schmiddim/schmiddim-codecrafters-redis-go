@@ -23,6 +23,13 @@ type CacheEntry struct {
 	dateCreated time.Time
 }
 
+func NewCacheEntry(value string, expiryTime int) CacheEntry {
+	return CacheEntry{
+		dateCreated: time.Now(),
+		value:       value,
+		expiryTime:  expiryTime,
+	}
+}
 func (c CacheEntry) String() string {
 	return c.value
 }

@@ -8,7 +8,6 @@ import (
 	"net"
 	"os"
 	"strconv"
-	"time"
 )
 
 const (
@@ -73,43 +72,28 @@ func handleRequest(conn net.Conn) {
 				return
 			}
 		case "set":
-
-			if len(value.Array()) == 5 {
-				if value.Array()[3].String() == "PX" {
-					key := value.Array()[1].String()
-					expiryTime, err := strconv.Atoi(value.Array()[4].String())
-
-					if err != nil {
-						_, err := conn.Write([]byte("-ERR Invalid expiry Time\r\n"))
-						if err != nil {
-							return
-						}
-					}
-					cacheItems[key] = CacheEntry{
-						value:       value.Array()[2].String(),
-						expiryTime:  expiryTime,
-						dateCreated: time.Now(),
-					}
-					_, err = conn.Write([]byte("+OK\r\n"))
+			if len(value.Array()) == 5 && value.Array()[3].String() == "PX" {
+				key := value.Array()[1].String()
+				expiryTime, err := strconv.Atoi(value.Array()[4].String())
+				if err != nil {
+					_, err := conn.Write([]byte("-ERR Invalid expiry Time\r\n"))
 					if err != nil {
 						return
 					}
-
+				}
+				cacheItems[key] = NewCacheEntry(value.Array()[2].String(), expiryTime)
+				_, err = conn.Write([]byte("+OK\r\n"))
+				if err != nil {
+					return
 				}
 			}
 			if len(value.Array()) == 3 {
 				key := value.Array()[1].String()
-
-				cacheItems[key] = CacheEntry{
-					value:       value.Array()[2].String(),
-					expiryTime:  -1,
-					dateCreated: time.Now(),
-				}
-
-				_, err := conn.Write([]byte("+OK\r\n"))
-				if err != nil {
-					return
-				}
+				cacheItems[key] = NewCacheEntry(value.Array()[2].String(), -1)
+			}
+			_, err := conn.Write([]byte("+OK\r\n"))
+			if err != nil {
+				return
 			}
 		case "get":
 			if len(value.Array()) != 2 {
@@ -141,7 +125,5 @@ func handleRequest(conn net.Conn) {
 				return
 			}
 		}
-
 	}
-
 }
