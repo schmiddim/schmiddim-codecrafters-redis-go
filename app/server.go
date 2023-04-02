@@ -81,7 +81,7 @@ func handleRequest(conn net.Conn) {
 			}
 			key := value.Array()[1].String()
 			cacheItems[key] = value.Array()[2].String()
-			_, err := conn.Write([]byte("+saved\r\n"))
+			_, err := conn.Write([]byte("+OK\r\n"))
 			if err != nil {
 				return
 			}
