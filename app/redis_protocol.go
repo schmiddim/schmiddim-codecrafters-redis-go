@@ -34,6 +34,9 @@ func (c CacheEntry) String() string {
 	return c.value
 }
 func (c CacheEntry) IsExpired() bool {
+	if c.expiryTime < 0 {
+		return false
+	}
 	duration := time.Duration(c.expiryTime) * time.Millisecond
 	expiryDate := c.dateCreated.Add(duration)
 	if expiryDate.Before(time.Now()) {

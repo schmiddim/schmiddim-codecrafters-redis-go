@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -72,7 +73,7 @@ func handleRequest(conn net.Conn) {
 				return
 			}
 		case "set":
-			if len(value.Array()) == 5 && value.Array()[3].String() == "PX" {
+			if len(value.Array()) == 5 && strings.ToUpper(value.Array()[3].String()) == "PX" {
 				key := value.Array()[1].String()
 				expiryTime, err := strconv.Atoi(value.Array()[4].String())
 				if err != nil {
@@ -90,10 +91,10 @@ func handleRequest(conn net.Conn) {
 			if len(value.Array()) == 3 {
 				key := value.Array()[1].String()
 				cacheItems[key] = NewCacheEntry(value.Array()[2].String(), -1)
-			}
-			_, err := conn.Write([]byte("+OK\r\n"))
-			if err != nil {
-				return
+				_, err := conn.Write([]byte("+OK\r\n"))
+				if err != nil {
+					return
+				}
 			}
 		case "get":
 			if len(value.Array()) != 2 {
